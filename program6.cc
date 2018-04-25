@@ -4,17 +4,22 @@
  */
 
 #include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
 #include "cdk.h"
+#include "program6.h"
 
-#define MATRIX_WIDTH 4
-#define MATRIX_HEIGHT 3
-#define BOX_WIDTH 15
-#define MATRIX_NAME_STRING "Test Matrix"
+#define FILE_NAME "binfile.bin"
+
+#define MATRIX_WIDTH 3
+#define MATRIX_HEIGHT 5
+#define BOX_WIDTH 18
+#define MATRIX_NAME_STRING FILE_NAME
 
 using namespace std;
 
-int main()
-{
+int main() {
 
   WINDOW	*window;
   CDKSCREEN	*cdkscreen;
@@ -28,8 +33,8 @@ int main()
   // values you choose to set for MATRIX_WIDTH and MATRIX_HEIGHT
   // above.
 
-  const char 		*rowTitles[] = {"R0", "R1", "R2", "R3", "R4", "R5"};
-  const char 		*columnTitles[] = {"C0", "C1", "C2", "C3", "C4", "C5"};
+  const char 		*rowTitles[] = {"", "A", "B", "C", "D", "E"};
+  const char 		*columnTitles[] = {"", "1", "2", "3", "4", "5"};
   int		boxWidths[] = {BOX_WIDTH, BOX_WIDTH, BOX_WIDTH, BOX_WIDTH, BOX_WIDTH, BOX_WIDTH};
   int		boxTypes[] = {vMIXED, vMIXED, vMIXED, vMIXED,  vMIXED,  vMIXED};
 
@@ -63,8 +68,32 @@ int main()
   /*
    * Dipslay a message
    */
-  setCDKMatrixCell(myMatrix, 2, 2, "Test Message");
-  drawCDKMatrix(myMatrix, true);    /* required  */
+  ifstream bInfile(FILE_NAME, ios::in | ios::binary);
+  BinFileHeader* header = new BinFileHeader();
+  BinFileRecord* record = new BinFileRecord();
+  stringstream ss;
+  
+  bInfile.read((char*) header, sizeof(BinFileHeader));
+  ss.str(""); ss.clear(); ss << "0x" << std::uppercase << std::hex << header->magicNumber;
+  setCDKMatrixCell(myMatrix, 1, 1, ("Magic: " + ss.str()).c_str());
+  ss.str(""); ss.clear(); ss << std::nouppercase << std::dec << header->versionNumber;
+  setCDKMatrixCell(myMatrix, 1, 2, ("Version: " + ss.str()).c_str());
+  ss.str(""); ss.clear(); ss << header->numRecords;
+  setCDKMatrixCell(myMatrix, 1, 3, ("NumRecords: " + ss.str()).c_str());
+  
+  int max = header->numRecords;
+  if(max > 4) max = 4;
+  for(int i = 0; i < max; i++){
+    bInfile.read((char*) record, sizeof(BinFileRecord));
+    int l = record->strLength;
+    ss.str(""); ss.clear(); ss << l;
+    setCDKMatrixCell(myMatrix, i+2, 1, ("Length: " + ss.str()).c_str());
+    setCDKMatrixCell(myMatrix, i+2, 2, record->stringBuffer);
+  }
+
+  bInfile.close();
+
+  drawCDKMatrix(myMatrix, true); /* required */
 
   /* So we can see results, pause until a key is pressed. */
   unsigned char x;
