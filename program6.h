@@ -10,6 +10,7 @@
 
 const int maxStringLength = 25;
 
+// The matrix header information
 class BinFileHeader {
  public:
   uint32_t magicNumber;
@@ -17,6 +18,7 @@ class BinFileHeader {
   uint64_t numRecords;
 };
 
+// The matrix record information
 class BinFileRecord {
  public:
   uint8_t strLength;
